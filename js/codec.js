@@ -73,6 +73,8 @@ export async function encodeProfile(profile) {
     cards: p.cards.map((c) => ({
       id: c.id,
       ...(c.cardName ? { cardName: c.cardName } : {}),
+      ...(c.greeting ? { greeting: c.greeting } : {}),
+      ...(c.subject ? { subject: c.subject } : {}),
       contact: c.contact,
       items: c.items.map((i) => ({
         type: i.type,

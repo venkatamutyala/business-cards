@@ -492,3 +492,12 @@ details.block > summary::marker { color: var(--ink-quiet); }
 
 
 .rows__hint { margin: 8px 0 0; font-size: 0.85rem; color: var(--ink-quiet); }
+
+/* What they will actually see, rather than what you typed. */
+.greet__preview {
+  margin: 2px 0 10px; padding: 8px 10px;
+  background: var(--bg); border-left: 3px solid var(--accent);
+  border-radius: 0 8px 8px 0;
+  font-size: 0.86rem; color: var(--ink);
+}
+.greet__preview[hidden] { display: none; }

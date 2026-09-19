@@ -1,0 +1,77 @@
+# Business Cards
+
+> An offline contact-card sharer. You keep several cards (contact details plus
+> social handles) on your own phone; tapping a row fills the screen with a QR
+> code the person opposite scans with their camera. The important one carries a
+> vCard *inside the code*, so it works with no network on either phone and needs
+> no app installed on theirs. No backend, no accounts, no analytics.
+
+Live: https://venkatamutyala.github.io/business-cards/
+Source: https://github.com/venkatamutyala/business-cards
+Licence: MIT. Vendored third-party code is listed in NOTICE.md.
+
+Vanilla ES modules. **No build step, no dependencies, no package.json.** Edit a
+file and reload. Everything runs in Docker; nothing is installed on the host.
+
+## How it is put together
+
+- [index.html](https://github.com/venkatamutyala/business-cards/blob/main/index.html): one page; each screen is a section, toggled by `hidden`
+- [js/ui.js](https://github.com/venkatamutyala/business-cards/blob/main/js/ui.js): home list, card switcher, backup & transfer sheet, and the `showSurface()` state machine
+- [js/qrview.js](https://github.com/venkatamutyala/business-cards/blob/main/js/qrview.js): the full-screen QR overlay — an overlay, deliberately not one of the surfaces
+- [js/store.js](https://github.com/venkatamutyala/business-cards/blob/main/js/store.js): localStorage, validation, the forward-only migration chain, backup signature
+- [js/codec.js](https://github.com/venkatamutyala/business-cards/blob/main/js/codec.js): the `#p=` payload — deflate-raw, base64url, one marker byte
+- [js/rows.js](https://github.com/venkatamutyala/business-cards/blob/main/js/rows.js): the service registry; adding a service is ONE entry here
+- [js/vcard.js](https://github.com/venkatamutyala/business-cards/blob/main/js/vcard.js): vCard 3.0 builder, escaping, length budget with a drop order
+- [js/qr.js](https://github.com/venkatamutyala/business-cards/blob/main/js/qr.js): canvas rendering and the integer-scaling maths
+- [tests/cases.js](https://github.com/venkatamutyala/business-cards/blob/main/tests/cases.js): one assertion table, run by `node:test` and by `/tests/test.html` in a browser
+
+## Running and testing
+
+```sh
+docker compose up -d                              # nginx :8080 + an HTTPS tunnel
+docker run --rm -v "$PWD":/app -w /app node:22-alpine \
+  node --experimental-default-type=module --test tests/unit.test.js
+```
+
+The browser runner at `/tests/test.html` matters more than the Node one: opened
+on a phone it executes where the platform differences actually are.
+
+## Decisions that look like bugs and are not
+
+If you are changing this code, these are deliberate. Each was arrived at the
+hard way; please do not "fix" one without reading why.
+
+- **Error correction is hardcoded L, and L is a floor, not a default.** A screen
+  has no damage to correct for. The real failure is moiré from the camera
+  sampling the display grid, and bigger modules prevent that — which beats
+  correcting for it. Raising ECC makes codes *harder* to scan here.
+- **The quiet zone is drawn into the canvas**, not left to CSS, so it survives a
+  screenshot or "save image".
+- **No swipe navigation on the QR screen.** For the seconds that matter the
+  phone faces away from its owner, who cannot see it. An accidental swipe would
+  silently swap the code and they would scan the wrong thing. Same reason for
+  the grip margins, the edge-swipe rejection and the recipient-facing caption.
+- **`active` is excluded from the backup signature** in `canonical()`. Including
+  it would mean merely *switching cards* reported your backup as stale, and a
+  chip that lies is one people stop reading.
+- **The v1 payload fixture in `tests/cases.js` must never be regenerated.**
+  Encoding and decoding with current code passes whether or not migration works;
+  only a real historical payload proves the chain still holds.
+- **`facetime:` is intentionally outside `ALLOWED_SCHEMES` but inside
+  `RENDERABLE_SCHEMES`.** The first list gates data arriving from a payload; the
+  second gates URLs the app builds from its own registry.
+- **Every path is relative** (`./`), including `start_url`, `scope` and the
+  service-worker registration, so the app runs from any subpath. Introducing an
+  absolute path breaks every fork.
+- **Payload data reaches the DOM through `textContent` only.** There is no
+  `innerHTML` anywhere and it should stay that way.
+- **`sw.js` serves cache-first and never calls `skipWaiting()` on its own.** An
+  update waits for the user to tap Reload; the app must not reload itself out
+  from under someone mid-handover.
+
+## Fork it
+
+Fork, then Settings → Pages → Deploy from a branch → `main` / `/ (root)`.
+Nothing needs editing. One caveat: `localStorage` is per-origin, not per-path,
+so on `<you>.github.io/<repo>/` the cards share a bucket with that account's
+other Pages projects.

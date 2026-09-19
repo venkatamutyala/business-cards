@@ -34,6 +34,7 @@ export const TYPES = {
     input: 'phone',
     url: (h) => `https://wa.me/${digits(h).replace(/^\+/, '')}`,
     vcard: 'TEL;TYPE=CELL',
+    prefill: { body: 'text' },
     // Works offline via Universal/App Link when WhatsApp is installed; falls back
     // to an install page (needing data) when it is not.
     note: 'Opens a chat. Needs WhatsApp installed on their phone.',
@@ -101,6 +102,7 @@ export const TYPES = {
     input: 'phone',
     url: (h) => `sms:${digits(h)}`,
     vcard: 'TEL;TYPE=CELL',
+    prefill: { body: 'body' },
     caution: 'Some Android cameras ignore this. Use My contact card instead.',
   },
   email: {
@@ -108,8 +110,30 @@ export const TYPES = {
     input: 'email',
     url: (h) => `mailto:${String(h).trim()}`,
     vcard: 'EMAIL;TYPE=INTERNET',
+    prefill: { subject: 'subject', body: 'body' },
   },
 };
+
+// `{name}` expands to the card owner's name, so duplicating a card does not
+// leave a stale name baked into the text. The message is prefilled in THEIR
+// app, addressed to you -- it is written in their voice and they tap send.
+export function renderGreeting(text, ownerName) {
+  // First name: a greeting says "Hi Venkat", not "Hi Venkat Mutyala".
+  const first = String(ownerName || '').trim().split(/\s+/)[0] || '';
+  return String(text || '').replace(/\{name\}/gi, first);
+}
+
+// Append a prefilled message to a destination, where the channel supports it.
+// Returns the url unchanged when it does not.
+export function withMessage(url, type, { greeting = '', subject = '' } = {}) {
+  const t = TYPES[type];
+  if (!t?.prefill || !url) return url;
+  const parts = [];
+  if (t.prefill.subject && subject) parts.push(`${t.prefill.subject}=${encodeURIComponent(subject)}`);
+  if (t.prefill.body && greeting) parts.push(`${t.prefill.body}=${encodeURIComponent(greeting)}`);
+  if (!parts.length) return url;
+  return url + (url.includes('?') ? '&' : '?') + parts.join('&');
+}
 
 export const ALLOWED_SCHEMES = ['https:', 'http:', 'mailto:', 'tel:', 'sms:'];
 

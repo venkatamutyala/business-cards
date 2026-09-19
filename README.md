@@ -26,6 +26,10 @@ gets its own code, so you can share just one thing.
   "Show as text" falls back to plain details they can type.
 - **Phone entry by country selector**, with trunk-zero handling, so you type
   your number the way you normally write it.
+- **A prefilled greeting.** Write one message per card and the WhatsApp, text
+  and email codes open with it ready for them to send — "Hi Venkat! Great to
+  meet you at KubeCon." `{name}` becomes your first name. Email gets a subject
+  too. The other services can't prefill, so they don't pretend to.
 - **Installable and fully offline** once added to your home screen.
 
 ## Your data
@@ -106,6 +110,8 @@ so only a real historical payload proves the chain still holds.
 ```
 LICENSE               MIT
 NOTICE.md             third-party notices for the vendored code
+llms.txt              project summary for agents, incl. the non-obvious
+                      decisions that look like bugs and are not
 index.html            single page; screens are sections
 css/app.css
 js/main.js            boot, deep links, restore-from-fragment

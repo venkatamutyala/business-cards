@@ -7,7 +7,7 @@
 // with no interactive targets, edge-swipe rejection, nothing scrollable, no
 // transitions, and an instruction aimed at them rather than debug text aimed at us.
 
-import { TYPES, buildUrl, labelFor } from './rows.js';
+import { TYPES, buildUrl, labelFor, renderGreeting } from './rows.js';
 import { buildVCard, VCARD_BUDGET } from './vcard.js';
 import { iconSvg } from './icons.js';
 import { renderQr } from './qr.js';
@@ -502,6 +502,8 @@ function rowEl(item, t, profile) {
   // what replaced the recipient toggle: no control, no stored preference, no
   // decision to make while someone is waiting.
   const flags = [];
+  const card = activeCard(profile);
+  if (t.prefill && card.greeting) flags.push('Greeting attached');
   if (t.only === 'ios') flags.push('iPhone only');
   if (t.caution) flags.push(t.caution);
   if (flags.length) {

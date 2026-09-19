@@ -8,7 +8,7 @@
 // margins with no targets, a caption aimed at the recipient, and a labelled
 // rescue ladder rather than silent changes.
 
-import { TYPES, buildUrl, labelFor, isRenderableUrl } from './rows.js';
+import { TYPES, buildUrl, labelFor, isRenderableUrl, withMessage, renderGreeting } from './rows.js';
 import { buildVCard } from './vcard.js';
 import { renderQr, toMeCard, ECC } from './qr.js';
 import { iconSvg } from './icons.js';
@@ -41,7 +41,11 @@ function payloadFor(target, profile) {
     if (rescueStep === 3) return { text: toMeCard(card), kind: 'mecard', ecc: ECC.L };
     return { text: buildVCard(card).text, kind: 'vcard', ecc: ECC.L };
   }
-  const url = buildUrl(target.item);
+  const card = activeCard(profile);
+  const url = withMessage(buildUrl(target.item), target.item.type, {
+    greeting: renderGreeting(card.greeting, card.contact?.fullName),
+    subject: card.subject,
+  });
   // ECC is never lowered -- L is the floor -- but the last rung may raise it.
   return { text: url, kind: 'url', ecc: rescueStep === 3 ? ECC.Q : ECC.L };
 }
@@ -142,6 +146,10 @@ function paintQr() {
     if (card.dropped.length) notes.push(`Not included: ${card.dropped.join(', ')}.`);
   } else {
     const t = TYPES[current.item.type];
+    // You are holding this away from you and cannot see it, so say whether a
+    // greeting is riding along.
+    const greeting = renderGreeting(activeCard(profile).greeting, activeCard(profile).contact?.fullName);
+    if (t?.prefill && greeting) notes.push('Your greeting is ready for them to send.');
     if (t?.caution) notes.push(t.caution);
     else if (t?.note) notes.push(t.note);
   }

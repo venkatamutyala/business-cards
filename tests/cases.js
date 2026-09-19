@@ -2,7 +2,7 @@
 // SAME cases. The browser runner matters more: opened over the tunnel it runs on
 // the actual phone, which is where the platform differences live.
 
-import { TYPES, buildUrl, isAllowedUrl, digits } from '../js/rows.js';
+import { TYPES, buildUrl, isAllowedUrl, digits, withMessage, renderGreeting } from '../js/rows.js';
 import { buildVCard, esc, withScheme } from '../js/vcard.js';
 import { toMeCard } from '../js/qr.js';
 import { encodeProfile, decodeProfile, MAX_FRAGMENT } from '../js/codec.js';
@@ -209,6 +209,76 @@ export const cases = [
   {
     name: 'adds a scheme to a bare domain',
     run: () => eq(buildUrl({ type: 'link', handle: 'example.com/writing' }), 'https://example.com/writing'),
+  },
+
+  /* ---- prefilled greeting ---- */
+  {
+    name: '{name} becomes the first name, not the full name',
+    run: () => {
+      eq(renderGreeting('Hi {name}! Great to meet you.', 'Venkat Mutyala'),
+         'Hi Venkat! Great to meet you.');
+      eq(renderGreeting('Hi {NAME}!', 'Sam Rivera'), 'Hi Sam!');
+      eq(renderGreeting('No token here', 'Sam Rivera'), 'No token here');
+      eq(renderGreeting('', 'Sam'), '');
+    },
+  },
+  {
+    name: 'only channels that can prefill get a message',
+    run: () => {
+      const opts = { greeting: 'Hi Sam!', subject: 'Nice to meet you' };
+      // Telegram's ?text= prefills share links, not DMs; Signal has no
+      // mechanism at all. Attaching one would promise what the app cannot do.
+      for (const type of ['linkedin', 'github', 'telegram', 'signal', 'tel', 'x']) {
+        const bare = buildUrl({ type, handle: type === 'tel' ? '+15550000000' : 'sam' });
+        eq(withMessage(bare, type, opts), bare, `${type} must be left alone`);
+      }
+    },
+  },
+  {
+    name: 'WhatsApp, SMS and email each use their own parameter',
+    run: () => {
+      const opts = { greeting: 'Hi Sam!', subject: 'Nice to meet you' };
+      const wa = withMessage(buildUrl({ type: 'whatsapp', handle: '+15550000000' }), 'whatsapp', opts);
+      ok(wa.includes('?text=Hi%20Sam!'), wa);
+      const sms = withMessage(buildUrl({ type: 'sms', handle: '+15550000000' }), 'sms', opts);
+      ok(sms.includes('?body=Hi%20Sam!'), sms);
+      const mail = withMessage(buildUrl({ type: 'email', handle: 'sam@example.com' }), 'email', opts);
+      ok(mail.includes('?subject=Nice%20to%20meet%20you'), mail);
+      ok(mail.includes('&body=Hi%20Sam!'), mail);
+    },
+  },
+  {
+    name: 'an empty greeting leaves the destination untouched',
+    run: () => {
+      const bare = buildUrl({ type: 'whatsapp', handle: '+15550000000' });
+      eq(withMessage(bare, 'whatsapp', { greeting: '', subject: '' }), bare);
+      // A subject with no body still applies, but only where a subject exists.
+      const mail = buildUrl({ type: 'email', handle: 'sam@example.com' });
+      ok(withMessage(mail, 'email', { subject: 'Hello' }).includes('?subject=Hello'));
+      eq(withMessage(bare, 'whatsapp', { subject: 'Hello' }), bare, 'WhatsApp has no subject');
+    },
+  },
+  {
+    name: 'a greeting with URL metacharacters is encoded, not injected',
+    run: () => {
+      const nasty = 'Hi & bye? #now =1';
+      const wa = withMessage(buildUrl({ type: 'whatsapp', handle: '+15550000000' }), 'whatsapp',
+                             { greeting: nasty });
+      eq(wa.split('?').length, 2, 'exactly one query separator');
+      eq(new URL(wa).searchParams.get('text'), nasty, 'round-trips intact');
+    },
+  },
+  {
+    name: 'a greeting survives the backup payload',
+    run: async () => {
+      const c = baseProfile();
+      c.greeting = 'Hi {name}! Great to meet you at KubeCon.';
+      c.subject = 'Nice to meet you';
+      const r = await decodeProfile(await encodeProfile(baseWallet([c])));
+      ok(r.ok);
+      eq(r.profile.cards[0].greeting, 'Hi {name}! Great to meet you at KubeCon.');
+      eq(r.profile.cards[0].subject, 'Nice to meet you');
+    },
   },
 
   /* ---- scheme allow-list ---- */

@@ -4,7 +4,7 @@
 // lot. Each link is a single line: what it is, the handle, and a way to remove
 // it. No labels, no reordering, no per-row chrome.
 
-import { TYPES } from './rows.js';
+import { TYPES, renderGreeting } from './rows.js';
 import { iconSvg } from './icons.js';
 import { el, rid } from './dom.js';
 import { CAPS } from './store.js';
@@ -105,6 +105,8 @@ export function renderEditor(root, profile, { onChange, onDone }) {
   const summary = el('p', 'summary');
 
   const repaint = () => { onChange(); paintSummary(); };
+  // Assigned once the greeting block exists; the name field is built before it.
+  let repaintPreview = () => {};
 
   /* ---------- contact card ---------- */
   const card = el('section', 'block');
@@ -118,7 +120,7 @@ export function renderEditor(root, profile, { onChange, onDone }) {
     'Your name, number, email and website all go on the one code you hold up. It works with no internet, and they need no app.'));
 
   const name = row('Name', c.fullName, (v) => {
-    c.fullName = v; repaint();
+    c.fullName = v; repaintPreview(); repaint();
   }, { autocomplete: 'name', placeholder: 'Your name', maxlength: CAPS.name });
   card.appendChild(name.wrap);
 
@@ -137,6 +139,38 @@ export function renderEditor(root, profile, { onChange, onDone }) {
   card.appendChild(pair);
 
   root.appendChild(card);
+
+  /* ---------- greeting ---------- */
+  //
+  // Prefilled in THEIR app, addressed to you: they scan, it opens ready to
+  // send. So it is written in their voice, not yours.
+
+  const greet = el('section', 'block');
+  greet.appendChild(el('h2', 'block__h', 'Greeting'));
+  greet.appendChild(el('p', 'block__hint',
+    'Ready for them to send when they scan your WhatsApp, text or email code. '
+    + 'Write it as if they are writing to you. Leave it empty for none.'));
+
+  const preview = el('p', 'greet__preview');
+  const paintPreview = () => {
+    const rendered = renderGreeting(p.greeting, c.fullName);
+    preview.textContent = rendered ? `They'll see: \u201c${rendered}\u201d` : '';
+    preview.hidden = !rendered;
+  };
+
+  const g = row('Message', p.greeting, (v) => { p.greeting = v; paintPreview(); repaint(); },
+    { placeholder: 'Hi {name}! Great to meet you today.', maxlength: CAPS.greeting,
+      hint: '{name} becomes your first name.' });
+  greet.appendChild(g.wrap);
+  greet.appendChild(preview);
+
+  greet.appendChild(row('Email subject', p.subject, (v) => { p.subject = v; repaint(); },
+    { placeholder: 'Nice to meet you', maxlength: CAPS.label,
+      hint: 'Used only by the email code.' }).wrap);
+
+  repaintPreview = paintPreview;
+  paintPreview();
+  root.appendChild(greet);
 
   /* ---------- links ---------- */
   const links = el('section', 'block');

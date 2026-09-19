@@ -26,6 +26,7 @@ export const CAPS = {
   cards: 5,          // a rep with nine personas has a different problem
   items: 60,
   label: 80,
+  greeting: 240,   // long enough for a sentence, short enough to stay scannable
   handle: 256,
   name: 120,
   note: 300,
@@ -40,6 +41,8 @@ export function emptyCard(id = rid('c')) {
   return {
     id,
     cardName: '',
+    greeting: '',
+    subject: '',
     contact: { fullName: '', org: '', title: '', phone: '', email: '', url: '', note: '' },
     items: [],
   };
@@ -57,6 +60,8 @@ export function validateCard(c, n = 0) {
   return {
     id: typeof c.id === 'string' && c.id ? c.id : base.id,
     cardName: clamp(c.cardName, CAPS.label),
+    greeting: clamp(c.greeting, CAPS.greeting),
+    subject: clamp(c.subject, CAPS.label),
     contact: {
       fullName: clamp(k.fullName, CAPS.name),
       org: clamp(k.org, CAPS.label),
@@ -167,7 +172,7 @@ export function canonical(p) {
   return JSON.stringify((p.cards || []).map((c) => {
     const k = c.contact || {};
     return [
-      c.cardName,
+      c.cardName, c.greeting, c.subject,
       k.fullName, k.org, k.title, k.phone, k.email, k.url, k.note,
       (c.items || []).map((i) => [i.type, i.handle, i.label || '']),
     ];

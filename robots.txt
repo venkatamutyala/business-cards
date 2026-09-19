@@ -1,0 +1,5 @@
+User-agent: *
+Allow: /
+
+# Project summary for language models and agents:
+# https://venkatamutyala.github.io/business-cards/llms.txt

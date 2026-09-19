@@ -3,7 +3,7 @@
 // a subfolder, and no absolute origin is baked in -- the dev tunnel URL changes
 // on every run.
 
-const VERSION = 'v26';
+const VERSION = 'v27';
 const CACHE = `shs-${VERSION}`;
 
 const SHELL = [

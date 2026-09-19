@@ -13,9 +13,8 @@ import { iconSvg } from './icons.js';
 import { renderQr } from './qr.js';
 import { $, el, rid } from './dom.js';
 import { openQr } from './qrview.js';
-const MOVE_WARNED = registerKey('q4m.moveWarned');
 import { installState } from './install.js';
-import { save, backupState, markBackedUp, activeCard, cardLabel, emptyCard, CAPS, registerKey } from './store.js';
+import { save, backupState, markBackedUp, activeCard, cardLabel, emptyCard, CAPS } from './store.js';
 import { backupLink } from './codec.js';
 import { renderEditor } from './editor.js';
 
@@ -210,23 +209,8 @@ export function wireMove(profile) {
     openMove(profile, { from: surface === 'cards' ? 'cards' : 'home' });
   };
 
-  // Confirmed once per device. At 40 handovers a day a repeated confirm gets
-  // dismissed blind; this action is rare, so the confirm keeps its meaning.
-  $('revealMove').onclick = () => {
-    let warned = false;
-    try { warned = localStorage.getItem(MOVE_WARNED) === '1'; } catch { /* ignore */ }
-    if (!warned) {
-      const ok = confirm(
-        'This code contains everything on your card.\n\n' +
-        'Anyone who scans it gets a full copy they can use as their own. ' +
-        'Only point it at your own phone.'
-      );
-      if (!ok) return;
-      try { localStorage.setItem(MOVE_WARNED, '1'); } catch { /* ignore */ }
-    }
-    moveRevealed = true;
-    paintMove(profile);
-  };
+  $('revealMove').onclick = () => { moveRevealed = true; paintMove(profile); };
+
   $('sheetClose').onclick = () => closeMove(profile);
 
   $('copyLink').onclick = async () => {

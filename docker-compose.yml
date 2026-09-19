@@ -1,0 +1,16 @@
+services:
+  web:
+    image: nginx:alpine
+    volumes:
+      - ./:/usr/share/nginx/html:ro
+      - ./docker/nginx.conf:/etc/nginx/conf.d/default.conf:ro
+    ports:
+      - "8080:80"          # desktop debugging only; the phone uses the tunnel
+
+  # Service workers and PWA install need HTTPS, and localhost is unreachable from
+  # a phone. This is how the app gets onto the real device under test.
+  tunnel:
+    image: cloudflare/cloudflared:latest
+    command: tunnel --no-autoupdate --url http://web:80
+    depends_on:
+      - web

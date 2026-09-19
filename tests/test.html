@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Tests</title>
+<style>
+  body { font: 15px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+         margin: 0; padding: 16px 16px 48px; background: #fff; color: #111; }
+  h1 { font-size: 1.1rem; }
+  #summary { position: sticky; top: 0; background: #fff; padding: 10px 0;
+             border-bottom: 1px solid #ddd; font-weight: 600; }
+  .pass { color: #14603f; }
+  .fail { color: #9b1c1c; }
+  ol { padding-left: 1.2rem; }
+  li { margin: 6px 0; }
+  pre { background: #f4f2ee; padding: 8px; overflow-x: auto; font-size: 12px; margin: 4px 0 0; }
+</style>
+</head>
+<body>
+<h1>Social Handle Sharer &mdash; unit tests</h1>
+<div id="summary">Running&hellip;</div>
+<ol id="results"></ol>
+
+<script type="module">
+import { cases } from './cases.js';
+
+const results = document.getElementById('results');
+let pass = 0, fail = 0;
+
+for (const c of cases) {
+  const li = document.createElement('li');
+  try {
+    await c.run();
+    pass++;
+    li.className = 'pass';
+    li.textContent = `PASS  ${c.name}`;
+  } catch (err) {
+    fail++;
+    li.className = 'fail';
+    li.textContent = `FAIL  ${c.name}`;
+    const pre = document.createElement('pre');
+    pre.textContent = err && err.message ? err.message : String(err);
+    li.appendChild(pre);
+  }
+  results.appendChild(li);
+}
+
+const summary = document.getElementById('summary');
+summary.textContent = `${pass} passed, ${fail} failed`;
+summary.className = fail ? 'fail' : 'pass';
+</script>
+</body>
+</html>

@@ -1,0 +1,494 @@
+/* System fonts only -- zero external requests at runtime. */
+:root {
+  --bg: #f6f5f3;
+  --surface: #ffffff;
+  --ink: #16150f;
+  --ink-quiet: #6a675d;
+  --line: #ddd9d0;
+  --accent: #1f5d4c;
+  --warn: #8a5a00;
+  --radius: 10px;
+  --tap: 48px;
+  --font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #14130f;
+    --surface: #1e1c18;
+    --ink: #f2efe8;
+    --ink-quiet: #a09c92;
+    --line: #322f29;
+    --accent: #6fd3b4;
+    --warn: #e0ab4f;
+  }
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  padding: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--font);
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  padding:
+    env(safe-area-inset-top) env(safe-area-inset-right)
+    env(safe-area-inset-bottom) env(safe-area-inset-left);
+}
+
+/* ---------- Home ---------- */
+
+.home { max-width: 34rem; margin: 0 auto; padding: 0 16px 48px; }
+
+.topbar {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 14px 0 6px;
+}
+.topbar__title { font-size: 1.02rem; margin: 0; letter-spacing: -0.01em; min-width: 0; }
+
+.rows { list-style: none; margin: 8px 0 0; padding: 0; }
+
+.row {
+  border: 1px solid var(--line); border-radius: var(--radius);
+  background: var(--surface); margin-bottom: 8px;
+}
+.row__btn {
+  display: flex; align-items: center; gap: 12px; width: 100%;
+  min-height: 64px; padding: 10px 14px;
+  background: none; border: 0; color: inherit; font: inherit;
+  text-align: left; cursor: pointer; border-radius: var(--radius);
+}
+.row__btn:focus-visible { outline: 3px solid var(--accent); outline-offset: -3px; }
+.row__label { font-size: 1.02rem; font-weight: 600; }
+.row__value { font-size: 0.82rem; color: var(--ink-quiet); word-break: break-all; }
+.row__flags { font-size: 0.75rem; color: var(--ink-quiet); margin-top: 2px; }
+.row__flags.is-caution { color: var(--warn); }
+
+.foot { color: var(--ink-quiet); font-size: 0.82rem; text-align: center; margin-top: 22px; }
+
+.btn {
+  min-height: var(--tap); padding: 0 18px;
+  border: 1px solid var(--line); border-radius: var(--radius);
+  background: var(--surface); color: var(--ink);
+  font: inherit; font-weight: 600; cursor: pointer;
+}
+.btn:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+.btn[disabled] { opacity: 0.4; cursor: default; }
+.btn--quiet { background: none; border-color: transparent; color: var(--ink-quiet); }
+
+/* ---------- Full-screen QR ----------
+   Always full-bleed white, never dark-mode chrome: on OLED the surrounding
+   chrome is most of the panel's light output, and a dim room is the hazard the
+   wake lock does not solve. No transition -- a 200ms cross-fade is 200ms of
+   unscannable code while their camera is already pointed at it. */
+
+.qrview {
+  position: fixed; inset: 0; z-index: 50;
+  background: #ffffff; color: #111;
+  display: grid;
+  grid-template-columns: 14px 1fr 14px;   /* grip margins down both edges */
+  grid-template-areas: "gl stage gr" "gl controls gr";
+  grid-template-rows: 1fr auto;
+  overflow: hidden;                        /* nothing scrollable */
+  padding-bottom: env(safe-area-inset-bottom);
+}
+.qrview[hidden] { display: none; }
+
+/* Fingers wrap the sides of a phone held outward. No interactive targets here,
+   and edge swipes are swallowed so a grip cannot close the view. */
+.qrview__grip { touch-action: none; }
+.qrview > .qrview__grip:first-of-type { grid-area: gl; }
+.qrview > .qrview__grip:last-of-type  { grid-area: gr; }
+
+.qrview__stage {
+  grid-area: stage;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 6px; min-height: 0;
+}
+.qrview__stage canvas { display: block; image-rendering: pixelated; }
+
+/* Readable across a table, so they can type it when the scan will not happen. */
+.qrview__text {
+  display: flex; flex-direction: column; gap: 10px;
+  align-items: center; justify-content: center;
+  padding: 8px 4px; text-align: center; max-width: 100%;
+}
+.qrview__text[hidden] { display: none; }
+.qrview__text b {
+  font-size: 1.5rem; font-weight: 700; letter-spacing: -0.01em;
+  word-break: break-word; user-select: all;
+}
+.qrview__text span {
+  font-size: 1.25rem; user-select: all; word-break: break-all;
+}
+.qrview__text i { font-size: 0.85rem; color: #555; font-style: normal; }
+
+.qrview__instruct {
+  margin: 4px 0 0; font-size: 1.15rem; font-weight: 600;
+  text-align: center; color: #111;
+}
+.qrview__dest {
+  margin: 0; font-size: 0.9rem; color: #444; text-align: center;
+  word-break: break-all; max-width: 90%;
+}
+.qrview__note {
+  margin: 0; font-size: 0.82rem; color: #7a5300; text-align: center; max-width: 90%;
+}
+
+.qrview__controls {
+  grid-area: controls;
+  display: flex; flex-direction: column; gap: 8px;
+  padding: 6px 0 10px;
+}
+.qrview__row { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
+.qrview__controls .btn { background: #fff; border-color: #ccc; color: #111; }
+.btn--rescue { background: #fff; border-color: #ccc; color: #333; font-weight: 500; }
+.btn--close { background: #111; border-color: #111; color: #fff; }
+
+/* Brightness rescue: strip every non-code pixel to white and grow the code. */
+.qrview.is-bright .qrview__instruct,
+.qrview.is-bright .qrview__dest,
+.qrview.is-bright .qrview__note { display: none; }
+.qrview.is-bright .qrview__controls { padding-bottom: 6px; }
+
+.toast {
+  position: fixed; left: 50%; transform: translateX(-50%);
+  bottom: calc(18px + env(safe-area-inset-bottom));
+  max-width: min(22rem, calc(100vw - 32px)); text-align: center;
+  background: #111; color: #fff; padding: 10px 16px; border-radius: 999px;
+  font-size: 0.88rem; z-index: 60;
+}
+.toast[hidden] { display: none; }
+
+@media (prefers-reduced-motion: reduce) {
+  * { animation: none !important; transition: none !important; }
+}
+
+/* ---------- Editor ---------- */
+
+.block {
+  border: 1px solid var(--line); border-radius: var(--radius);
+  background: var(--surface); padding: 14px; margin: 12px 0;
+}
+.block__h { font-size: 0.95rem; margin: 0 0 4px; }
+.block__hint { font-size: 0.8rem; color: var(--ink-quiet); margin: 0 0 12px; }
+
+.f { margin-bottom: 10px; }
+.f__label {
+  display: block; font-size: 0.75rem; color: var(--ink-quiet);
+  margin-bottom: 3px; font-weight: 600; letter-spacing: 0.01em;
+}
+.f__input {
+  display: block; width: 100%; min-height: 44px;
+  padding: 8px 10px; font: inherit; font-size: 1rem;
+  color: var(--ink); background: var(--bg);
+  border: 1px solid var(--line); border-radius: 8px;
+}
+.f__input:focus-visible { outline: 3px solid var(--accent); outline-offset: 1px; }
+.f__err { font-size: 0.76rem; color: var(--warn); margin: 3px 0 0; }
+.f__err:empty { display: none; }
+
+/* Organisation and job title share a line where there is room. */
+.pair { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+@media (max-width: 22rem) { .pair { grid-template-columns: 1fr; } }
+
+.links { list-style: none; margin: 0; padding: 0; }
+.links__empty { color: var(--ink-quiet); font-size: 0.86rem; padding: 2px 0 8px; }
+
+/* One line per link: what it is, the handle, and the controls. */
+.link { display: flex; align-items: flex-start; gap: 8px; margin-bottom: 8px; }
+.link__f { flex: 1; margin-bottom: 0; min-width: 0; }
+.link__side { display: flex; align-items: center; gap: 6px; padding-top: 18px; }
+
+.chip {
+  min-height: 44px; padding: 0 10px; white-space: nowrap;
+  border: 1px solid var(--accent); border-radius: 999px;
+  background: transparent; color: var(--accent);
+  font: inherit; font-size: 0.76rem; font-weight: 700; cursor: pointer;
+}
+.chip--off { border-color: var(--line); color: var(--ink-quiet); }
+.chip:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+
+.iconbtn {
+  min-width: 44px; min-height: 44px;
+  border: 1px solid var(--line); border-radius: 8px;
+  background: var(--bg); color: var(--ink-quiet);
+  font-size: 1rem; line-height: 1; cursor: pointer;
+}
+.iconbtn:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+
+.add { display: flex; gap: 8px; margin-top: 10px; }
+.add__select {
+  flex: 1; min-height: 44px; padding: 0 10px;
+  font: inherit; color: var(--ink); background: var(--bg);
+  border: 1px solid var(--line); border-radius: 8px;
+}
+
+.summary {
+  font-size: 0.8rem; color: var(--ink-quiet);
+  text-align: center; margin: 4px 0 12px;
+}
+.summary.is-warn { color: var(--warn); font-weight: 600; }
+
+.btn--primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+.btn--wide { display: block; width: 100%; }
+
+.home.is-editing .foot { display: none; }
+
+/* ---------- Backup sheet ---------- */
+
+.sheet { margin: 12px 0 32px; }
+.sheet[hidden] { display: none; }
+.sheet__h { font-size: 0.88rem; margin: 0 0 4px; }
+
+.sheet__chip {
+  display: block; margin: 0 0 12px; padding: 10px 12px;
+  border-radius: 8px; font-size: 0.85rem; font-weight: 600;
+  background: var(--surface); border: 1px solid var(--line); color: var(--ink-quiet);
+}
+.sheet__chip.is-stale { border-color: var(--warn); color: var(--warn); }
+
+.block__warn { font-size: 0.8rem; color: var(--warn); margin: 0 0 10px; font-weight: 600; }
+.block__note { font-size: 0.8rem; color: var(--ink-quiet); margin: 8px 0 0; }
+.block__note:empty { display: none; }
+
+.sheet__link {
+  display: block; width: 100%; font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.76rem; padding: 8px 10px; margin-bottom: 8px;
+  color: var(--ink); background: var(--bg);
+  border: 1px solid var(--line); border-radius: 8px; resize: vertical;
+}
+.sheet__file { display: block; margin-top: 10px; font-size: 0.85rem; width: 100%; }
+.sheet__peek { margin-top: 10px; font-size: 0.82rem; color: var(--ink-quiet); }
+.sheet__peek pre {
+  white-space: pre-wrap; word-break: break-word; font-size: 0.75rem;
+  background: var(--bg); border: 1px solid var(--line); border-radius: 8px; padding: 8px;
+}
+
+.home.is-sheet .rows,
+.home.is-sheet .foot { display: none; }
+
+/* Country selector + national number */
+.phone { display: flex; gap: 8px; align-items: stretch; }
+.phone__cc {
+  flex: 0 1 46%; min-width: 0; min-height: 44px; padding: 0 6px;
+  font: inherit; font-size: 0.9rem; color: var(--ink); background: var(--bg);
+  border: 1px solid var(--line); border-radius: 8px;
+}
+.phone__num { flex: 1 1 54%; min-width: 0; }
+.f__hint { font-size: 0.76rem; color: var(--ink-quiet); margin: 3px 0 0; }
+.f__hint:empty { display: none; }
+
+
+/* ---------- Install bar ---------- */
+
+.install-bar {
+  display: flex; align-items: center; gap: 10px;
+  margin: 12px 0 0; padding: 12px 14px;
+  border: 1px solid var(--accent); border-radius: var(--radius);
+  background: var(--surface);
+}
+.install-bar[hidden] { display: none; }
+.install-bar__text { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.install-bar__text b { font-size: 0.92rem; }
+.install-bar__text span { font-size: 0.78rem; color: var(--ink-quiet); }
+.install-bar__x { min-width: 40px; min-height: 40px; border: 0; background: none; }
+
+.offline-note {
+  margin: 10px 0 0; padding: 8px 12px; border-radius: 8px;
+  background: var(--surface); border: 1px solid var(--line);
+  font-size: 0.82rem; color: var(--ink-quiet); text-align: center;
+}
+.offline-note[hidden] { display: none; }
+
+.update-bar {
+  position: fixed; left: 12px; right: 12px;
+  bottom: calc(12px + env(safe-area-inset-bottom));
+  display: flex; align-items: center; justify-content: space-between; gap: 10px;
+  padding: 10px 12px; border-radius: var(--radius);
+  background: var(--ink); color: var(--bg); font-size: 0.88rem; z-index: 55;
+}
+.update-bar[hidden] { display: none; }
+.update-bar .btn { min-height: 40px; background: var(--bg); color: var(--ink); border-color: var(--bg); }
+
+.home.is-editing .install-bar,
+.home.is-sheet .install-bar { display: none; }
+
+/* The "Everything" row leads the list: one code carrying the whole card. */
+.row--all { border-color: var(--accent); }
+.row--all .row__label { color: var(--accent); }
+.row__meta { font-size: 0.75rem; color: var(--warn); margin-top: 2px; }
+.rows__empty {
+  border: 1px dashed var(--line); border-radius: var(--radius);
+  padding: 18px 14px; text-align: center; color: var(--ink-quiet);
+  font-size: 0.9rem;
+}
+
+/* ---------- Service glyphs ---------- */
+
+.row__icon {
+  flex: 0 0 auto; display: inline-flex; align-items: center; justify-content: center;
+  width: 34px; height: 34px;
+}
+.row__icon svg { display: block; }
+
+/* The glyph sits beside the code, never on it. */
+.qrview__mark { margin: 0 0 2px; line-height: 0; }
+.qrview__mark[hidden] { display: none; }
+.qrview__mark svg { display: block; }
+.qrview.is-bright .qrview__mark { display: none; }
+
+.link__icon {
+  flex: 0 0 auto; display: inline-flex; align-items: center; justify-content: center;
+  width: 26px; height: 26px; padding-top: 18px;
+}
+
+@media (prefers-color-scheme: dark) {
+  /* The dark brand marks disappear against a dark row. */
+  .row__icon svg path[fill="#181717"],
+  .row__icon svg path[fill="#000000"] { fill: #f2efe8; }
+}
+
+/* While a code is up the controls own the bottom of the screen, so a toast
+   must not sit on top of the buttons you are reaching for without looking. */
+#qrview:not([hidden]) ~ #toast { bottom: calc(150px + env(safe-area-inset-bottom)); }
+#qrview:not([hidden]) ~ #updateBar { display: none; }
+
+/* ---------- Desktop ----------
+   A phone-shaped tool on a big screen. Rather than stretch the layout to fill
+   a 1440px window, keep the column and frame it, so it reads as deliberate
+   instead of stranded. */
+
+@media (min-width: 46rem) {
+  body { background: var(--bg); }
+
+  .home {
+    max-width: 30rem;
+    margin: 32px auto 48px;
+    padding: 18px 20px 26px;
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 18px;
+  }
+  .row, .block, .edit-row { background: var(--bg); }
+  .f__input, .add__select, .phone__cc, .sheet__link { background: var(--surface); }
+  .topbar { padding-top: 2px; }
+
+  /* Full-bleed white behind a code is right on a phone held out at arm's
+     length; on a monitor it is just a wall of white. */
+  .qrview {
+    grid-template-columns: 1fr minmax(0, 30rem) 1fr;
+    grid-template-rows: auto auto;
+    align-content: center;          /* a floating card, not a full-height wall */
+    background: rgba(0, 0, 0, 0.45);
+    padding: 24px 0;
+  }
+  .qrview__stage {
+    background: #fff;
+    border-radius: 18px 18px 0 0;
+    padding: 24px 20px 12px;
+    gap: 8px;
+  }
+  .qrview__controls {
+    background: #fff;
+    border-radius: 0 0 18px 18px;
+    padding: 6px 20px 20px;
+  }
+  /* Backdrop click closes, as any desktop overlay should. */
+  .qrview__grip { pointer-events: auto; cursor: default; }
+}
+
+/* Very short windows: never let the code push the caption off screen. */
+@media (max-height: 34rem) {
+  .qrview__dest, .qrview__mark { display: none; }
+}
+
+/* ---------- Move panel ---------- */
+
+.move__qr { text-align: center; }
+.move__qr canvas {
+  display: block; margin: 0 auto 10px; image-rendering: pixelated;
+  background: #fff; padding: 8px; border-radius: 8px;
+}
+.move__caption { font-size: 0.9rem; margin: 0 0 6px; }
+
+.sheet__rule { border: 0; border-top: 1px solid var(--line); margin: 14px 0; }
+.btn--danger { border-color: var(--warn); color: var(--warn); }
+details.block > summary { cursor: pointer; font-weight: 700; }
+details.block > summary::marker { color: var(--ink-quiet); }
+
+
+/* The transfer code must not look like the codes you hand to other people.
+   Those go full-bleed black-on-white; this one stays small, inset and tinted,
+   so reflex cannot mistake one for the other. */
+#moveQrWrap {
+  margin-top: 12px; padding: 14px 10px;
+  background: color-mix(in srgb, var(--accent) 8%, var(--surface));
+  border: 1px dashed var(--accent); border-radius: 12px;
+}
+#moveQrWrap canvas { max-width: 68%; }
+
+/* Rare action, deliberately quiet and below the whole row list: a rep has to
+   scroll past every daily control to reach it. */
+.linkbtn {
+  background: none; border: 0; padding: 8px 4px;
+  color: var(--ink-quiet); font: inherit; font-size: 0.82rem;
+  text-decoration: underline; text-underline-offset: 3px; cursor: pointer;
+}
+.linkbtn:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+.home.is-editing .foot--link,
+.home.is-sheet .foot--link { display: none; }
+
+/* ---------- Card switcher ---------- */
+
+.cardsw {
+  display: inline-flex; align-items: center; gap: 6px;
+  max-width: 13rem; min-height: 40px; padding: 4px 10px 4px 10px;
+  font: inherit; color: inherit; cursor: pointer;
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+}
+.cardsw:hover { border-color: var(--accent); }
+.cardsw:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+.cardsw__name {
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0;
+}
+.cardsw__stack { display: inline-flex; color: var(--ink-quiet); flex: 0 0 auto; }
+.cardsw__stack[hidden] { display: none; }
+/* The count says "there are others" without needing the list opened. */
+.cardsw__count {
+  flex: 0 0 auto; font-size: 0.72rem; font-weight: 700; letter-spacing: 0.02em;
+  color: #fff; background: var(--accent);
+  padding: 2px 7px; border-radius: 999px;
+}
+.cardsw__count[hidden] { display: none; }
+.cardsw__caret { color: var(--ink-quiet); font-size: 0.72em; flex: 0 0 auto; }
+
+.cardlist { list-style: none; margin: 0 0 12px; padding: 0; }
+.cardrow {
+  display: flex; align-items: center; gap: 4px;
+  border: 1px solid var(--line); border-radius: var(--radius);
+  background: var(--surface); margin-bottom: 8px; padding: 6px 8px 6px 12px;
+}
+.cardrow.is-active { border-color: var(--accent); }
+.cardrow__pick {
+  flex: 1; min-width: 0; text-align: left; background: none; border: 0;
+  font: inherit; color: inherit; cursor: pointer; min-height: 48px; padding: 4px 0;
+}
+.cardrow__name { display: block; font-weight: 700; font-size: 0.98rem; }
+.cardrow__sub { display: block; font-size: 0.78rem; color: var(--ink-quiet); }
+.cardrow.is-active .cardrow__name { color: var(--accent); }
+
+/* Four controls on one row: keep them reachable without crowding the name. */
+.cardrow .iconbtn { min-width: 40px; padding: 0; }
+.cardrow .iconbtn svg { display: block; margin: 0 auto; }
+
+
+
+.rows__hint { margin: 8px 0 0; font-size: 0.85rem; color: var(--ink-quiet); }

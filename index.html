@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; img-src 'self' blob: data:; style-src 'self' 'unsafe-inline'; connect-src 'self'; object-src 'none'; base-uri 'none'">
+<meta name="color-scheme" content="light dark">
+<title>My Card</title>
+<link rel="stylesheet" href="./css/app.css">
+<link rel="manifest" href="./app.webmanifest">
+<link rel="apple-touch-icon" href="./icons/apple-touch-icon.png">
+<link rel="icon" type="image/png" sizes="32x32" href="./icons/favicon-32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="./icons/favicon-16.png">
+<meta name="theme-color" content="#111111">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="My Card">
+</head>
+<body>
+
+<main id="home" class="home">
+  <header class="topbar">
+    <h1 class="topbar__title">
+      <button type="button" class="cardsw" id="cardSwitch">
+        <span class="cardsw__stack" id="cardSwitchStack" hidden aria-hidden="true"></span>
+        <span class="cardsw__name" id="cardSwitchName">My card</span>
+        <span class="cardsw__count" id="cardSwitchCount" hidden></span>
+        <span class="cardsw__caret" id="cardSwitchCaret" aria-hidden="true">▾</span>
+      </button>
+    </h1>
+    <div class="topbar__actions">
+      <button type="button" class="btn btn--quiet" id="editBtn">Edit</button>
+    </div>
+  </header>
+
+  <div class="install-bar" id="installBar" hidden>
+    <div class="install-bar__text">
+      <b id="installBarTitle">Add to your home screen</b>
+      <span id="installBarHint"></span>
+    </div>
+    <button type="button" class="btn btn--primary" id="installNow">Install</button>
+    <button type="button" class="iconbtn install-bar__x" id="installDismiss" aria-label="Not now">&#10005;</button>
+  </div>
+
+  <p class="offline-note" id="offlineNote" hidden></p>
+
+  <!-- Every code is its own row. Pick the one you want to hand over. -->
+
+  <ul class="rows" id="rows"></ul>
+
+  <p class="foot">Tap one, hold your screen up. They scan it with their camera &mdash; no app needed.</p>
+
+  <section class="editor" id="editor" hidden></section>
+
+  <section class="sheet" id="cards" hidden>
+    <h2 class="block__h">My cards</h2>
+    <p class="block__hint">One per product, territory or role. Only the active card is shown on the home screen.</p>
+    <ul class="cardlist" id="cardList"></ul>
+    <button type="button" class="btn btn--wide" id="addCard">Add a card</button>
+    <p class="block__note" id="cardsNote"></p>
+
+    <hr class="sheet__rule">
+    <h3 class="sheet__h">Backup and transfer</h3>
+    <p class="block__hint">Move them to another phone, or keep a backup link. Both cover every card at once.</p>
+    <button type="button" class="btn btn--wide" id="moveBtn">Move to another phone</button>
+    <button type="button" class="btn btn--primary btn--wide" id="cardsClose">Done</button>
+  </section>
+
+  <section class="sheet" id="move" hidden>
+    <h2 class="block__h">Move to another phone</h2>
+
+    <div class="block move__qr" id="moveQrBlock">
+      <!-- Deliberately NOT rendered on open. A code you had to summon is not one
+           you raise by reflex at a prospect. -->
+      <button type="button" class="btn btn--wide" id="revealMove">Show the transfer code</button>
+      <div id="moveQrWrap" hidden>
+        <canvas id="moveCanvas" role="img"></canvas>
+        <p class="move__caption" id="moveCaption"></p>
+      <!-- Concrete, not alarmed: this is the default route, and naming exactly
+           what is in the code beats a louder sentence. -->
+      <p class="block__note" id="moveWarn"></p>
+      <p class="block__note" id="moveSize"></p>
+        <details class="sheet__peek">
+          <summary>See what's in this code</summary>
+          <pre id="movePeek"></pre>
+        </details>
+      </div>
+    </div>
+
+    <div class="block">
+      <h3 class="sheet__h">Your backup link</h3>
+      <p class="block__hint">Opening this link on any device restores every card, so keeping a copy somewhere private is your backup. Nothing else is needed.</p>
+      <p class="sheet__chip" id="sheetChip"></p>
+      <button type="button" class="btn btn--primary btn--wide" id="copyLink">Copy my backup link</button>
+      <p class="block__note" id="linkWarn"></p>
+      <textarea class="sheet__link" id="backupLink" readonly rows="3" aria-label="Backup link" hidden></textarea>
+    </div>
+
+
+    <button type="button" class="btn btn--primary btn--wide" id="sheetClose">Done</button>
+  </section>
+
+</main>
+
+<!-- Full-screen QR. Aimed at the RECIPIENT: for the seconds that matter the
+     phone is facing away and its owner cannot see this surface. -->
+<div class="qrview" id="qrview" role="dialog" aria-modal="true" aria-labelledby="qrTitle" hidden>
+  <div class="qrview__grip" aria-hidden="true"></div>
+
+  <div class="qrview__stage">
+    <canvas id="qrCanvas" role="img"></canvas>
+    <!-- Universal fallback. Covers glare, a dim screen, a missing app, a
+         disabled scanner and an unsupported scheme at once, without having to
+         work out which one you hit. -->
+    <div class="qrview__text" id="qrTextPanel" hidden></div>
+    <!-- Sized to be read by them, at arm's length, and worded as an instruction.
+         Their nod is the only success signal this app can ever get. -->
+    <p class="qrview__mark" id="qrMark" hidden></p>
+    <p class="qrview__instruct" id="qrTitle"></p>
+    <p class="qrview__dest" id="qrDest"></p>
+    <p class="qrview__note" id="qrNote"></p>
+  </div>
+
+  <div class="qrview__controls">
+    <div class="qrview__row">
+      <button type="button" class="btn btn--rescue" id="rescueBtn"></button>
+      <button type="button" class="btn btn--rescue" id="qrText">Show as text</button>
+    </div>
+    <div class="qrview__row">
+      <button type="button" class="btn" id="qrPrimary"></button>
+      <button type="button" class="btn" id="qrCopy">Copy link</button>
+      <button type="button" class="btn btn--close" id="qrClose">Done</button>
+    </div>
+  </div>
+
+  <div class="qrview__grip" aria-hidden="true"></div>
+</div>
+
+<div class="update-bar" id="updateBar" hidden>
+  <span>Update ready.</span>
+  <button type="button" class="btn" id="updateNow">Reload</button>
+</div>
+
+<div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
+
+<script type="module" src="./js/main.js"></script>
+</body>
+</html>

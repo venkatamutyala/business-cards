@@ -1,51 +1,64 @@
-# qrcodes4.me — Social Handle Sharer
+# Business Cards
 
-Only works on your phone. Install it as an app and cache it.
+An offline contact card you hand over by QR code. Tap a row, a code fills the
+screen, they scan it with their camera. No backend, no accounts, and nothing to
+install on their phone.
 
-A personal PWA for handing over your details in person. Tap a row, a QR code
-fills the screen, they scan it with their camera. No backend, no accounts, and
-nothing to install on their phone.
+**<https://venkatamutyala.github.io/business-cards/>**
 
-The hero is the **contact QR**: it carries a vCard inside the code itself, so it
-works with **zero network on both phones** and their camera offers "Add to
-contacts" directly. That is the one mechanism that solves both halves of the
-problem — no internet, or they don't have WhatsApp/LinkedIn installed.
+The one that matters is **My contact card**: it carries a vCard inside the code
+itself, so it works with **no network on either phone** and their camera offers
+"Add to contacts" directly. That solves both halves of the problem — you have no
+signal, or they don't have WhatsApp/LinkedIn installed.
 
-## Status
+Everything else is a row: phone, email, website, and any handles you add. Each
+gets its own code, so you can share just one thing.
 
-**Working: editor, local storage, backup and transfer, installable PWA.**
+## What it does
 
-Install it from the banner on the main page — a real install prompt on Android
-and desktop Chrome, and Share → Add to Home Screen instructions on iPhone, which
-has no install API. Once installed it runs with no connection.
+- **Up to 5 cards** — one per product, territory or role. Switch from the title
+  in the header; the app reopens on whichever you used last.
+- **vCard 3.0** with proper escaping and a length budget, so the code stays
+  scannable off a screen rather than growing until it doesn't.
+- **A rescue ladder.** If a code won't scan, "Doesn't scan?" steps through
+  brighter, bigger, and a different encoding — each labelled before you tap it.
+  "Show as text" falls back to plain details they can type.
+- **Phone entry by country selector**, with trunk-zero handling, so you type
+  your number the way you normally write it.
+- **Installable and fully offline** once added to your home screen.
 
-Your cards are saved in this browser's `localStorage` on this device. The
-backup is a single link: a compressed base64url payload in the URL fragment
-carrying every card. Opening it on another device restores all of them.
+## Your data
 
-## Hosted
+Your cards live in this browser's `localStorage`, on this device. Nothing is
+uploaded, because there is no server to upload to — the app is static files.
 
-<https://venkatamutyala.github.io/business-cards/>
+The trade is that **your device holds the only copy**, which is why the backup
+is a first-class feature rather than a footnote. It is a single link: a
+compressed payload in the URL **fragment** (`#p=...`), carrying every card.
+Fragments are never sent to a server, so your details stay in the browser.
+Opening that link on another device restores all of your cards.
 
-All paths are relative, so it works from a subpath without configuration.
+One thing to be clear about: the payload is **compressed and base64-encoded,
+which is not encryption**. Anyone holding that link can read your name, number
+and email. Treat it like the contact details it contains.
 
-## Running it
+## Developing
 
 Everything runs in Docker; nothing is installed on the host.
 
 ```sh
-docker compose up -d
-docker compose logs tunnel | grep trycloudflare
+docker compose up -d                              # nginx on :8080 + a tunnel
+docker compose logs tunnel | grep trycloudflare   # an HTTPS URL for your phone
+docker compose down
 ```
 
-That prints an HTTPS URL to open on your phone. The tunnel matters because
-service workers and PWA install both require HTTPS, and `localhost` is
-unreachable from a handset. `http://localhost:8080` is there for desktop
-debugging only.
+The tunnel exists because service workers and PWA install both require HTTPS,
+and `localhost` is unreachable from a handset. `http://localhost:8080` is for
+desktop debugging only.
 
-```sh
-docker compose down          # stop
-```
+While testing over a tunnel: **use fake contact details** — a
+`trycloudflare.com` URL is public and unauthenticated. Every run is a new
+origin, so storage, the service worker and any install start fresh each time.
 
 ### Tests
 
@@ -55,54 +68,41 @@ docker run --rm -v "$PWD":/app -w /app node:22-alpine \
 ```
 
 The same assertion table also runs in a browser at `/tests/test.html`. That
-runner matters more — opened over the tunnel it executes on the actual phone,
-which is where the platform differences live.
+runner matters more: opened on a phone it executes where the platform
+differences actually are.
 
-## While testing over a tunnel
-
-- **Use fake contact details.** A `trycloudflare.com` URL is public and
-  unauthenticated. Real details go in once the app is on its final origin.
-- **Every run is a new origin.** Fresh storage, fresh service worker, fresh
-  install. Dead home-screen icons accumulate — delete them as you go.
-- **Never send anyone a tunnel URL with a payload attached.**
-
-## How the no-data model works
-
-Your card lives in your browser's storage on your own device. Nothing is
-uploaded, because there is no server to upload it to — the app is static files.
-The trade is that **your device holds the only copy**, which is why backup is a
-first-class feature rather than a footnote.
-
-The backup link puts your whole card into the URL **fragment** (`#p=...`).
-Fragments are never sent to the server, so your details stay in the browser even
-though the app is served from somewhere. But the payload is **base64, which is
-encoding and not encryption** — anyone holding that link can read your name,
-number and email. Treat it like the contact details it contains.
+`tests/cases.js` includes a **frozen v1 payload string**. Never regenerate it —
+encoding and decoding with current code passes whether or not migration works,
+so only a real historical payload proves the chain still holds.
 
 ## Layout
 
 ```
 index.html            single page; screens are sections
 css/app.css
-js/rows.js            row type registry — adding a service is one entry
-js/vcard.js           vCard 3.0 builder, escaping, budget drop-order
-js/qr.js              canvas rendering; ECC L is the floor
-js/ui.js              home list + full-screen QR view
-js/store.js           localStorage, validation, backup signature
-js/codec.js           base64url JSON payload for #p= links
-js/install.js         install prompt + service worker lifecycle
-js/countries.js       dialling codes for the phone selector
-js/timezones.js       generated: IANA zone -> country
-sw.js                 precache shell, cache-first, offline fallback
-app.webmanifest       relative start_url/scope, icons, shortcuts
-tools/                one-off generators (icons, timezone table)
-                      gen-icons.py takes a design: finder | card | scan
+js/main.js            boot, deep links, restore-from-fragment
+js/ui.js              home list, card switcher, backup & transfer sheet
+js/qrview.js          the full-screen QR overlay
 js/editor.js          in-place editor
-js/profile.js         sample data, loadable from the console only
-js/main.js            boot
+js/rows.js            service registry — adding a service is ONE entry
+js/vcard.js           vCard 3.0 builder, escaping, budget drop-order
+js/qr.js              canvas rendering; ECC L is a floor, not a default
+js/codec.js           compressed base64url payload for #p= links
+js/store.js           localStorage, validation, migration, backup signature
+js/install.js         install prompt + service worker lifecycle
+js/countries.js       dialling codes and country detection
+js/timezones.js       generated: IANA zone -> country
+js/icons.js           inline SVG glyphs (simple-icons, CC0)
+js/dom.js             shared $, el, rid
+sw.js                 versioned shell, cache-first, explicit update prompt
+app.webmanifest       relative start_url/scope, icons, shortcuts
+tools/                one-off generators; gen-icons.py takes: finder|card|scan
 vendor/qrcodegen.js   nayuki QR-Code-generator (MIT) + ESM shim
-tests/cases.js        assertion table, shared by both runners
 ```
 
-`vendor/qrcodegen.js` was compiled once from the upstream TypeScript source and
-committed. There is no build step.
+No build step and no dependencies. `vendor/qrcodegen.js` was compiled once from
+the upstream TypeScript and committed; `js/timezones.js` is generated from the
+IANA tz database by `tools/gen-timezones.sh`.
+
+`SPEC.md` is the original brief, kept for history. The product changed
+substantially during build — read this file, not that one.

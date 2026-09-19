@@ -4,7 +4,8 @@ An offline contact card you hand over by QR code. Tap a row, a code fills the
 screen, they scan it with their camera. No backend, no accounts, and nothing to
 install on their phone.
 
-**<https://venkatamutyala.github.io/business-cards/>**
+Running instance: **<https://venkatamutyala.github.io/business-cards/>**
+(fork it and you get your own — see [Run your own](#run-your-own))
 
 The one that matters is **My contact card**: it carries a vCard inside the code
 itself, so it works with **no network on either phone** and their camera offers
@@ -42,6 +43,31 @@ One thing to be clear about: the payload is **compressed and base64-encoded,
 which is not encryption**. Anyone holding that link can read your name, number
 and email. Treat it like the contact details it contains.
 
+## Run your own
+
+Fork the repo, then:
+
+1. **Settings → Pages → Source: Deploy from a branch → `main` / `/ (root)`**
+2. Wait for the build, then open `https://<you>.github.io/<your-repo>/`
+
+That is the whole setup. **Nothing needs editing** — every path in the app is
+relative, so it works from any repo name and any subpath. No config file, no
+build step, no dependencies, no secrets.
+
+Three things worth knowing before you rely on it:
+
+- **Storage is per-origin, not per-path.** On `<you>.github.io/<repo>/` your
+  cards share a `localStorage` origin with *every other project you publish to
+  Pages from that account*. Keys here are `q4m.`-prefixed so nothing collides,
+  but another page on that origin could read them. A custom domain gives the app
+  an origin of its own and closes that. Decide before you enter real details:
+  moving origin later wipes the install and invalidates backup links you are
+  already holding.
+- **Your instance is yours.** No backend, no analytics, nothing phones home.
+  This repo never learns that your fork exists or what is in anyone's cards.
+- **You are redistributing vendored code.** See `NOTICE.md` — a QR library
+  (MIT), icon set (CC0) and IANA timezone data (public domain).
+
 ## Developing
 
 Everything runs in Docker; nothing is installed on the host.
@@ -78,6 +104,8 @@ so only a real historical payload proves the chain still holds.
 ## Layout
 
 ```
+LICENSE               MIT
+NOTICE.md             third-party notices for the vendored code
 index.html            single page; screens are sections
 css/app.css
 js/main.js            boot, deep links, restore-from-fragment

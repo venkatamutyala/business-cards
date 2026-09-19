@@ -1,6 +1,6 @@
 {
   "name": "Business Cards",
-  "short_name": "Cards",
+  "short_name": "Business Cards",
   "description": "Hand over your details in person. Works with no internet.",
   "start_url": "./",
   "scope": "./",
